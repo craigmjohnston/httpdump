@@ -1,4 +1,4 @@
-module httpdump
+module github.com/craigmjohnston/httpdump
 
 go 1.23
 
