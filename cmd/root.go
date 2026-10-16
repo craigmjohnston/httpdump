@@ -3,9 +3,11 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/exec"
@@ -99,8 +101,7 @@ func (h handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	}
 
 	timestamp := time.Now().UnixMicro()
-	filepath := fmt.Sprintf("./%s%d.http", prefix, timestamp)
-	err = os.WriteFile(filepath, []byte(sb.String()), os.ModePerm)
+	filepath, err := writeNewFile(fmt.Sprintf("./%s%d", prefix, timestamp), []byte(sb.String()))
 	if err != nil {
 		panic(err)
 	}
@@ -130,5 +131,25 @@ func runExecCommand(command string, body []byte) {
 	err := c.Run()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "exec %q: %s\n", command, err)
+	}
+}
+
+func writeNewFile(name string, data []byte) (string, error) {
+	path := name + ".http"
+	for i := 1; ; i++ {
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, os.ModePerm)
+		if errors.Is(err, fs.ErrExist) {
+			path = fmt.Sprintf("%s-%d.http", name, i)
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+
+		_, err = f.Write(data)
+		if closeErr := f.Close(); err == nil {
+			err = closeErr
+		}
+		return path, err
 	}
 }

@@ -83,6 +83,38 @@ func TestRunExecCommandReportsFailure(t *testing.T) {
 	}
 }
 
+func TestWriteNewFileKeepsExistingFiles(t *testing.T) {
+	chdirTemp(t)
+
+	for i, want := range []string{"req.http", "req-1.http", "req-2.http"} {
+		got, err := writeNewFile("req", []byte{byte('a' + i)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != want {
+			t.Errorf("want path %q, got %q", want, got)
+		}
+	}
+
+	for i, name := range []string{"req.http", "req-1.http", "req-2.http"} {
+		contents, err := os.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if want := string(rune('a' + i)); string(contents) != want {
+			t.Errorf("want %s to contain %q, got %q", name, want, contents)
+		}
+	}
+}
+
+func TestWriteNewFileReturnsCreateError(t *testing.T) {
+	chdirTemp(t)
+
+	if _, err := writeNewFile("missing-dir/req", nil); err == nil {
+		t.Error("want an error for a missing directory, got nil")
+	}
+}
+
 func chdirTemp(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
