@@ -1,6 +1,6 @@
 package main
 
-import "httpdump/cmd"
+import "github.com/craigmjohnston/httpdump/cmd"
 
 func main() {
 	cmd.Execute()
